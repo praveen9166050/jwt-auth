@@ -1,6 +1,7 @@
 const bcryptjs = require('bcryptjs');
 const User = require('../models/User');
 const CustomError = require('../utils/customError');
+const mailer = require('../utils/mailer');
 
 const register = async (req, res, next) => {
   try {
@@ -16,6 +17,12 @@ const register = async (req, res, next) => {
     if (!user) {
       throw new CustomError(400, "Bad Request");
     }
+    const content = `
+      <div>
+        <p>Hi ${name}, please click on this <a href="http://localhost:${process.env.PORT}/mail-varification?id=${user._id}">link</a> to verify your account.</p>
+      </div>
+    `;
+    await mailer(process.env.TO_EMAIL, "Mail verification", content);
     res.status(201).json({
       success: true,
       message: "User created successfully",

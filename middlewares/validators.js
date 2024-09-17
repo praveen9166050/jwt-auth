@@ -3,7 +3,6 @@ const CustomError = require("../utils/customError");
 
 const registerValidator = (req, res, next) => {
   const payload = req.body;
-  console.log(payload);
   const schema = z.object({
     name: z
       .string({message: "Name is required"})
@@ -27,8 +26,6 @@ const registerValidator = (req, res, next) => {
     schema.parse(payload);
     next();
   } catch (error) {
-    console.log(error);
-    console.log(error.errors);
     next(new CustomError(400, error.errors[0].message));
   }
 }
