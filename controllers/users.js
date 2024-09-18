@@ -2,8 +2,10 @@ const bcryptjs = require('bcryptjs');
 const User = require('../models/User');
 const CustomError = require('../utils/customError');
 const mailer = require('../utils/mailer');
-const { default: mongoose, mongo } = require('mongoose');
-const verificationMailContent = require('../utils/verificationMailContent');
+const mongoose = require('mongoose');
+const { verificationMailContent, passwordResetMailContent } = require('../utils/mailContent');
+const crypto = require('crypto');
+const PasswordReset = require('../models/PasswordReset');
 
 const register = async (req, res, next) => {
   try {
@@ -67,7 +69,7 @@ const sendVerificationMail = async (req, res, next) => {
     if (user.isVerified) {
       throw new CustomError(400, "Email is already verified");
     }
-    const subject = "Email Verification Required";
+    const subject = "Reset Password";
     const content = verificationMailContent(
       user.name,
       `http://localhost:${process.env.PORT}/mail-verification?id=${user._id}`
@@ -82,4 +84,28 @@ const sendVerificationMail = async (req, res, next) => {
   }
 }
 
-module.exports = {register, mailVerification, sendVerificationMail};
+const resetPassword = async (req, res, next) => {
+  try {
+    const email = req.body.email;
+    const user = await User.findOne({email});
+    if (!user) {
+      throw new CustomError(404, "Email is not registered");
+    }
+    const token = crypto.randomBytes(32).toString('hex');
+    const passwordReset = await PasswordReset.create({userId: user._id, token});
+    const subject = "Email Verification Required";
+    const content = passwordResetMailContent(
+      user.name,
+      `http://localhost:${process.env.PORT}/reset-password?id=${user._id}&token=${passwordReset.token}`
+    )
+    await mailer(process.env.TO_EMAIL, subject, content);
+    res.status(200).json({
+      success: true,
+      message: "Password reset mail sent successfully"
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {register, mailVerification, sendVerificationMail, resetPassword};
