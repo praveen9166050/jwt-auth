@@ -57,4 +57,29 @@ const mailVerification = async (req, res, next) => {
   }
 }
 
-module.exports = {register, mailVerification};
+const sendVerificationMail = async (req, res, next) => {
+  try {
+    const email = req.body.email;
+    const user = await User.findOne({email});
+    if (!user) {
+      throw new CustomError(404, "Email is not registered");
+    }
+    if (user.isVerified) {
+      throw new CustomError(400, "Email is already verified");
+    }
+    const subject = "Email Verification Required";
+    const content = verificationMailContent(
+      user.name,
+      `http://localhost:${process.env.PORT}/mail-verification?id=${user._id}`
+    )
+    await mailer(process.env.TO_EMAIL, subject, content);
+    res.status(200).json({
+      success: true,
+      message: "Verification mail sent successfully"
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {register, mailVerification, sendVerificationMail};
