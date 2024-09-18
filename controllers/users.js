@@ -2,6 +2,8 @@ const bcryptjs = require('bcryptjs');
 const User = require('../models/User');
 const CustomError = require('../utils/customError');
 const mailer = require('../utils/mailer');
+const { default: mongoose, mongo } = require('mongoose');
+const verificationMailContent = require('../utils/verificationMailContent');
 
 const register = async (req, res, next) => {
   try {
@@ -17,12 +19,12 @@ const register = async (req, res, next) => {
     if (!user) {
       throw new CustomError(400, "Bad Request");
     }
-    const content = `
-      <div>
-        <p>Hi ${name}, please click on this <a href="http://localhost:${process.env.PORT}/mail-varification?id=${user._id}">link</a> to verify your account.</p>
-      </div>
-    `;
-    await mailer(process.env.TO_EMAIL, "Mail verification", content);
+    const subject = "Email Verification Required";
+    const content = verificationMailContent(
+      user.name,
+      `http://localhost:${process.env.PORT}/mail-verification?id=${user._id}`
+    )
+    await mailer(process.env.TO_EMAIL, subject, content);
     res.status(201).json({
       success: true,
       message: "User created successfully",
@@ -33,4 +35,26 @@ const register = async (req, res, next) => {
   }
 }
 
-module.exports = {register};
+const mailVerification = async (req, res, next) => {
+  try {
+    const userId = req.query.id;
+    if (!userId || !mongoose.isValidObjectId(userId)) {
+      return res.render('mail-verification', {message: "Invalid user id", status: "error"});
+    }
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.render('mail-verification', {message: "User not found", status: "error"});
+    }
+    if (user.isVerified) {
+      return res.render('mail-verification', { message: "Your email is already verified", status: "info" });
+    }
+    user.isVerified = true;
+    await user.save();
+    res.render('mail-verification', {message: "Email has been verified successfully", status: "info"});
+  } catch (error) {
+    console.log(error);
+    res.render('mail-verification', {message: "Something went wrong", status: "error"});
+  }
+}
+
+module.exports = {register, mailVerification};
