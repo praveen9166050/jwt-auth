@@ -84,7 +84,7 @@ const sendVerificationMail = async (req, res, next) => {
   }
 }
 
-const resetPassword = async (req, res, next) => {
+const forgotPassword = async (req, res, next) => {
   try {
     const email = req.body.email;
     const user = await User.findOne({email});
@@ -108,4 +108,14 @@ const resetPassword = async (req, res, next) => {
   }
 }
 
-module.exports = {register, mailVerification, sendVerificationMail, resetPassword};
+const resetPassword = async (req, res, next) => {
+  try {
+    res.status(200).json({
+
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {register, mailVerification, sendVerificationMail, forgotPassword, resetPassword};

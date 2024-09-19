@@ -1,6 +1,6 @@
 const express = require('express');
 const upload = require('../middlewares/fileUpload');
-const { register, sendVerificationMail, resetPassword } = require('../controllers/users');
+const { register, sendVerificationMail, forgotPassword, resetPassword } = require('../controllers/users');
 const { registerValidator, sendVerificationMailValidator, passwordResetValidator } = require('../middlewares/validators');
 
 const router = express.Router();
@@ -12,6 +12,10 @@ router
 router
 .route('/send-verification-mail')
 .post(sendVerificationMailValidator, sendVerificationMail);
+
+router
+.route('/forgot-password')
+.post(passwordResetValidator, forgotPassword);
 
 router
 .route('/reset-password')
