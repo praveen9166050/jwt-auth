@@ -46,7 +46,7 @@ const sendVerificationMailValidator = (req, res, next) => {
   }
 }
 
-const passwordResetValidator = (req, res, next) => {
+const forgotPasswordValidator = (req, res, next) => {
   const payload = req.body;
   const schema = z.object({
     email: z
@@ -62,4 +62,23 @@ const passwordResetValidator = (req, res, next) => {
   }
 }
 
-module.exports = {registerValidator, sendVerificationMailValidator, passwordResetValidator};
+const loginValidator = (req, res, next) => {
+  const payload = req.body;
+  const schema = z.object({
+    email: z
+    .string({message: "Email is required"})
+    .min(1, {message: "Email is required"})
+    .email({message: "Invalid email address"}),
+    password: z
+      .string({message: "Password is required"})
+      .min(1, {message: "Password is required"})
+  });
+  try {
+    schema.parse(payload);
+    next();
+  } catch (error) {
+    next(new CustomError(400, error.errors[0].message));
+  }
+}
+
+module.exports = {registerValidator, sendVerificationMailValidator, forgotPasswordValidator, loginValidator};

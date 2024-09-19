@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const { verificationMailContent, passwordResetMailContent } = require('../utils/mailContent');
 const crypto = require('crypto');
 const PasswordReset = require('../models/PasswordReset');
+const jwt = require('jsonwebtoken');
 
 const register = async (req, res, next) => {
   try {
@@ -150,4 +151,33 @@ const updatePassword = async (req, res, next) => {
   }
 }
 
-module.exports = {register, mailVerification, sendVerificationMail, forgotPassword, resetPassword, updatePassword};
+const login = async (req, res, next) => {
+  try {
+    const {email, password} = req.body;
+    const user = await User.findOne({email});
+    if (!user) {
+      throw new CustomError(401, "Invalid credentials");
+    }
+    const matched = await bcryptjs.compare(password, user.password);
+    if (!matched) {
+      throw new CustomError(401, "Invalid credentials");
+    }
+    const accessToken = jwt.sign(
+      {userId: user._id, name: user.name, email: user.email}, 
+      process.env.JWT_SECRET, 
+      {expiresIn: process.env.JWT_EXPIRES_IN}
+    );
+    const userDoc = user._doc;
+    delete userDoc.password;
+    res.status(200).json({
+      success: true,
+      user: userDoc,
+      accessToken,
+      tokenType: 'Bearer'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {register, mailVerification, sendVerificationMail, forgotPassword, resetPassword, updatePassword, login};
