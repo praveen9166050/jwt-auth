@@ -69,7 +69,7 @@ const sendVerificationMail = async (req, res, next) => {
     if (user.isVerified) {
       throw new CustomError(400, "Email is already verified");
     }
-    const subject = "Reset Password";
+    const subject = "Email Verification Required";
     const content = verificationMailContent(
       user.name,
       `http://localhost:${process.env.PORT}/mail-verification?id=${user._id}`
@@ -92,8 +92,9 @@ const forgotPassword = async (req, res, next) => {
       throw new CustomError(404, "Email is not registered");
     }
     const token = crypto.randomBytes(32).toString('hex');
+    await PasswordReset.findOneAndDelete({userId: user._id});
     const passwordReset = await PasswordReset.create({userId: user._id, token});
-    const subject = "Email Verification Required";
+    const subject = "Reset Password";
     const content = passwordResetMailContent(
       user.name,
       `http://localhost:${process.env.PORT}/reset-password?id=${user._id}&token=${passwordReset.token}`
@@ -110,12 +111,43 @@ const forgotPassword = async (req, res, next) => {
 
 const resetPassword = async (req, res, next) => {
   try {
-    res.status(200).json({
-
-    });
+    const {id: userId, token} = req.query;
+    if (!userId || !mongoose.isValidObjectId(userId)) {
+      return res.render('reset-password', { message: "Invalid user ID.", status: "error" });
+    }
+    if (!token) {
+      return res.render('reset-password', { message: "Invalid or missing reset token.", status: "error" });
+    }
+    const passwordResetData = await PasswordReset.findOne({userId, token});
+    if (!passwordResetData) {
+      return res.render('reset-password', { message: "Invalid reset token.", status: "error" });
+    }
+    res.render('reset-password', {userId, token, message: null, status: "info"});
   } catch (error) {
-    next(error);
+    console.log(error);
+    res.render('reset-password', {message: "Something went wrong", status: "error"});
   }
 }
 
-module.exports = {register, mailVerification, sendVerificationMail, forgotPassword, resetPassword};
+const updatePassword = async (req, res, next) => {
+  const {userId, token, password, confirmPassword} = req.body;
+  try {
+    if (password !== confirmPassword) {
+      return res.render('reset-password', {userId, token, message: "Password and confirm password do not match", status: "error"});
+    }
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.render('reset-password', {userId, token, message: "User not found", status: "error"});
+    }
+    const hash = await bcryptjs.hash(password, 10);
+    user.password = hash;
+    await user.save();
+    await PasswordReset.deleteOne({userId, token});
+    res.render('reset-password', {message: "Password reset successful", status: "info"});
+  } catch (error) {
+    console.log(error);
+    res.render('reset-password', {userId, token, message: "Something went wrong", status: "error"});
+  }
+}
+
+module.exports = {register, mailVerification, sendVerificationMail, forgotPassword, resetPassword, updatePassword};

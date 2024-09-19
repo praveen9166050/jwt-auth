@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const usersRouter = require('./routes/users');
 const mailVerificationRouter = require('./routes/mailVerification');
+const resetPasswordRouter = require('./routes/resetPassword');
 const CustomError = require('./utils/customError');
 
 const app = express();
@@ -12,9 +13,11 @@ app.set('view engine', 'ejs');
 app.set('views', './views');
 
 app.use(express.json());
+app.use(express.urlencoded({extended: true}));
 
 app.use('/api/v1/users', usersRouter);
 app.use('/mail-verification', mailVerificationRouter);
+app.use('/reset-password', resetPasswordRouter);
 
 app.use('*', (req, res, next) => {
   next(new CustomError(404, "Route doesn't exist"));
