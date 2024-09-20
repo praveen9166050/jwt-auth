@@ -162,13 +162,13 @@ const login = async (req, res, next) => {
     if (!matched) {
       throw new CustomError(401, "Invalid credentials");
     }
+    const userDoc = user._doc;
+    delete userDoc.password;
     const accessToken = jwt.sign(
-      {userId: user._id, name: user.name, email: user.email}, 
+      userDoc, 
       process.env.JWT_SECRET, 
       {expiresIn: process.env.JWT_EXPIRES_IN}
     );
-    const userDoc = user._doc;
-    delete userDoc.password;
     res.status(200).json({
       success: true,
       user: userDoc,
@@ -180,4 +180,25 @@ const login = async (req, res, next) => {
   }
 }
 
-module.exports = {register, mailVerification, sendVerificationMail, forgotPassword, resetPassword, updatePassword, login};
+const getProfile = async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: "User profile retrieved successfully",
+      user: req.user
+    })
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {
+  register, 
+  mailVerification, 
+  sendVerificationMail, 
+  forgotPassword, 
+  resetPassword, 
+  updatePassword, 
+  login, 
+  getProfile
+};

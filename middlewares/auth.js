@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 
 const auth = async (req, res, next) => {
   try {
-    const authHeader = req.header['authorization'];
+    const authHeader = req.headers['authorization'];
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new CustomError(403, "Unauthorized");
     }
