@@ -81,4 +81,30 @@ const loginValidator = (req, res, next) => {
   }
 }
 
-module.exports = {registerValidator, sendVerificationMailValidator, forgotPasswordValidator, loginValidator};
+const updateProfileValidator = (req, res, next) => {
+  const payload = req.body;
+  const schema = z.object({
+    name: z
+      .string({message: "Name must be a string"})
+      .min(1, {message: "Name should be of min 1 character"})
+      .optional(),
+    mobile: z
+      .string()
+      .length(10, {message: "Mobile number must be of exactly 10 digits"})
+      .optional()
+  }).strict();
+  try {
+    schema.parse(payload);
+    next();
+  } catch (error) {
+    next(new CustomError(400, error.errors[0].message));
+  }
+}
+
+module.exports = {
+  registerValidator, 
+  sendVerificationMailValidator, 
+  forgotPasswordValidator, 
+  loginValidator, 
+  updateProfileValidator
+};

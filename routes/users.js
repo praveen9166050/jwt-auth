@@ -1,7 +1,20 @@
 const express = require('express');
 const upload = require('../middlewares/fileUpload');
-const { register, sendVerificationMail, forgotPassword, login, getProfile } = require('../controllers/users');
-const { registerValidator, sendVerificationMailValidator, forgotPasswordValidator, loginValidator } = require('../middlewares/validators');
+const { 
+  register, 
+  sendVerificationMail, 
+  forgotPassword, 
+  login, 
+  getProfile, 
+  updateProfile 
+} = require('../controllers/users');
+const { 
+  registerValidator, 
+  sendVerificationMailValidator, 
+  forgotPasswordValidator, 
+  loginValidator, 
+  updateProfileValidator 
+} = require('../middlewares/validators');
 const auth = require('../middlewares/auth');
 
 const router = express.Router();
@@ -26,6 +39,7 @@ router.use(auth);
 
 router
 .route('/profile')
-.get(getProfile);
+.get(getProfile)
+.patch(upload.single('image'), updateProfileValidator, updateProfile);
 
 module.exports = router;

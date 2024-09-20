@@ -7,6 +7,8 @@ const { verificationMailContent, passwordResetMailContent } = require('../utils/
 const crypto = require('crypto');
 const PasswordReset = require('../models/PasswordReset');
 const jwt = require('jsonwebtoken');
+const deleteFile = require('../utils/deleteFile');
+const path = require('path');
 
 const register = async (req, res, next) => {
   try {
@@ -17,7 +19,7 @@ const register = async (req, res, next) => {
     }
     const hashedPasssword = await bcryptjs.hash(password, 10);
     const user = await User.create(
-      {name, email, mobile, password: hashedPasssword, image: 'image/' + req.file.filename}
+      {name, email, mobile, password: hashedPasssword, image: 'images/' + req.file.filename}
     );
     if (!user) {
       throw new CustomError(400, "Bad Request");
@@ -186,7 +188,28 @@ const getProfile = async (req, res) => {
       success: true,
       message: "User profile retrieved successfully",
       user: req.user
-    })
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+const updateProfile = async (req, res) => {
+  try {
+    const data = req.body;
+    if (req.file) {
+      data.image = 'images/' + req.file.filename
+      const user = await User.findById(req.user._id);
+      await deleteFile(path.join('public', user.image));
+    }
+    const user = await User.findByIdAndUpdate(req.user._id, data, {new: true});
+    const userDoc = user._doc;
+    delete userDoc.password;
+    res.status(200).json({
+      success: true,
+      message: "User profile updated successfully",
+      user
+    });
   } catch (error) {
     next(error);
   }
@@ -200,5 +223,6 @@ module.exports = {
   resetPassword, 
   updatePassword, 
   login, 
-  getProfile
+  getProfile,
+  updateProfile
 };
