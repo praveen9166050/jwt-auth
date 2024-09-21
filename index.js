@@ -1,4 +1,5 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 require('dotenv').config();
 const usersRouter = require('./routes/users');
@@ -14,6 +15,7 @@ app.set('views', './views');
 
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+app.use(cookieParser());
 
 app.use('/api/v1/users', usersRouter);
 app.use('/mail-verification', mailVerificationRouter);

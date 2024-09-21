@@ -6,7 +6,8 @@ const {
   forgotPassword, 
   login, 
   getProfile, 
-  updateProfile 
+  updateProfile, 
+  refreshAccessToken
 } = require('../controllers/users');
 const { 
   registerValidator, 
@@ -41,5 +42,9 @@ router
 .route('/profile')
 .get(getProfile)
 .patch(upload.single('image'), updateProfileValidator, updateProfile);
+
+router
+.route('/refresh-access-token')
+.get(refreshAccessToken)
 
 module.exports = router;

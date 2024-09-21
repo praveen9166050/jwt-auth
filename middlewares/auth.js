@@ -8,11 +8,11 @@ const auth = async (req, res, next) => {
       throw new CustomError(403, "Unauthorized");
     }
     const token = authHeader.split(' ')[1];
-    const decodedData = jwt.verify(token, process.env.JWT_SECRET);
-    if (!decodedData) {
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_TOKEN_SECRET);
+    if (!decoded) {
       throw new CustomError(403, "Unauthorized");
     }
-    req.user = decodedData;
+    req.userId = decoded.userId;
     next();
   } catch (error) {
     next(error);

@@ -164,13 +164,23 @@ const login = async (req, res, next) => {
     if (!matched) {
       throw new CustomError(401, "Invalid credentials");
     }
+    const accessToken = jwt.sign(
+      {userId: user._id}, 
+      process.env.JWT_ACCESS_TOKEN_SECRET, 
+      {expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN}
+    );
+    const refreshToken = jwt.sign(
+      {userId: user._id}, 
+      process.env.JWT_REFRESH_TOKEN_SECRET, 
+      {expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN}
+    );
     const userDoc = user._doc;
     delete userDoc.password;
-    const accessToken = jwt.sign(
-      userDoc, 
-      process.env.JWT_SECRET, 
-      {expiresIn: process.env.JWT_EXPIRES_IN}
-    );
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Strict'
+    });
     res.status(200).json({
       success: true,
       user: userDoc,
@@ -184,17 +194,18 @@ const login = async (req, res, next) => {
 
 const getProfile = async (req, res) => {
   try {
+    const user = await User.findById(req.userId, {password: 0});
     res.status(200).json({
       success: true,
       message: "User profile retrieved successfully",
-      user: req.user
+      user
     });
   } catch (error) {
     next(error);
   }
 }
 
-const updateProfile = async (req, res) => {
+const updateProfile = async (req, res, next) => {
   try {
     const data = req.body;
     if (req.file) {
@@ -202,7 +213,7 @@ const updateProfile = async (req, res) => {
       const user = await User.findById(req.user._id);
       await deleteFile(path.join('public', user.image));
     }
-    const user = await User.findByIdAndUpdate(req.user._id, data, {new: true});
+    const user = await User.findByIdAndUpdate(req.userId, data, {new: true});
     const userDoc = user._doc;
     delete userDoc.password;
     res.status(200).json({
@@ -210,6 +221,30 @@ const updateProfile = async (req, res) => {
       message: "User profile updated successfully",
       user
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+const refreshAccessToken = async (req, res, next) => {
+  try {
+    const {refreshToken} = req.cookies;
+    if (!refreshToken) {
+      throw new CustomError(401, "Refresh token is missing");
+    }
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_TOKEN_SECRET);
+    if (!decoded) {
+      throw new CustomError(403, "Unauthorized");
+    }
+    const accessToken = jwt.sign(
+      {userId: decoded.userId}, 
+      process.env.JWT_ACCESS_TOKEN_SECRET, 
+      {expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN}
+    );
+    res.status(200).json({
+      success: true,
+      accessToken
+    })
   } catch (error) {
     next(error);
   }
@@ -224,5 +259,6 @@ module.exports = {
   updatePassword, 
   login, 
   getProfile,
-  updateProfile
+  updateProfile,
+  refreshAccessToken
 };
